@@ -1,0 +1,60 @@
+{
+  "name": "@traitx/sdk",
+  "version": "1.0.1",
+  "description": "TraitX decision SDK — evaluate risk events against your policy chain and get allow / challenge / deny.",
+  "keywords": [
+    "traitx",
+    "fraud",
+    "risk",
+    "device fingerprint",
+    "policy",
+    "fraud prevention"
+  ],
+  "homepage": "https://github.com/traitx-allytech/traitx-sdk-node#readme",
+  "bugs": {
+    "url": "https://github.com/traitx-allytech/traitx-sdk-node/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/traitx-allytech/traitx-sdk-node.git"
+  },
+  "license": "SEE LICENSE IN LICENSE",
+  "author": "TraitX <traitx@allytech.sa>",
+  "type": "commonjs",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./browser": {
+      "types": "./dist/browser.d.ts",
+      "default": "./dist/browser.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --test test/",
+    "conformance": "node --test test/conformance.test.js",
+    "doctor": "node scripts/doctor.js",
+    "prepublishOnly": "npm run typecheck && npm run build && npm test"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "@types/node": "^20.0.0"
+  }
+}
