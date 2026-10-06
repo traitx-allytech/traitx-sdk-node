@@ -62,7 +62,26 @@ export class Transport {
           headers,
           body: payload,
           signal: controller.signal,
+          // Never let fetch follow a redirect on its own: it would forward
+          // X-API-Key / Authorization to whatever host the Location header
+          // names. Same-origin redirects are handled below (SPEC.md §10).
+          redirect: 'manual',
         });
+
+        if (isRedirect(response.status)) {
+          const target = describeRedirect(url, response.headers.get('location'));
+          lastRetryAfterMs = undefined;
+          lastError = target.allowed
+            ? `risk api redirected to same-origin ${target.location}; redirects are not followed for authenticated calls`
+            : `risk api redirected to ${target.location ?? '<no Location>'} (cross-origin); refusing to forward credentials`;
+          this.debug(`✗ ${spec.method} ${url}`, lastError);
+          // A redirect is a deployment problem, not a verdict: fail closed on
+          // the credential and let the failure mode decide, without retrying
+          // into the same redirect.
+          lastStatus = 0;
+          lastBody = undefined;
+          break;
+        }
 
         lastStatus = response.status;
         lastRetryAfterMs = parseRetryAfter(response.headers.get('retry-after'));
@@ -141,6 +160,40 @@ export class Transport {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, Math.max(0, ms)));
+}
+
+const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
+
+export function isRedirect(status: number): boolean {
+  return REDIRECT_STATUSES.has(status);
+}
+
+/**
+ * True when `location` resolves to the same scheme, host and port as `from`.
+ * A port change or an HTTPS→HTTP downgrade is a different origin.
+ */
+export function isSameOrigin(from: string, location: string): boolean {
+  try {
+    const a = new URL(from);
+    const b = new URL(location, from);
+    return a.protocol === b.protocol && a.hostname === b.hostname && a.port === b.port;
+  } catch {
+    return false;
+  }
+}
+
+function describeRedirect(
+  from: string,
+  location: string | null,
+): { allowed: boolean; location: string | null } {
+  if (!location) return { allowed: false, location: null };
+  let resolved = location;
+  try {
+    resolved = new URL(location, from).toString();
+  } catch {
+    return { allowed: false, location };
+  }
+  return { allowed: isSameOrigin(from, resolved), location: resolved };
 }
 
 function safeJsonParse(text: string): Record<string, unknown> | undefined {

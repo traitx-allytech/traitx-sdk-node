@@ -66,7 +66,7 @@ export interface ResolvedConfig extends Required<Omit<TraitXOptions,
   logger: (message: string, detail?: unknown) => void;
 }
 
-export const SDK_VERSION = '1.0.0';
+export const SDK_VERSION = '1.0.1';
 
 const DEFAULTS = {
   timeoutMs: 2500,
