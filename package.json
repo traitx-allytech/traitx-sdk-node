@@ -48,10 +48,14 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node --test test/",
+    "pretest": "npm run build",
+    "test": "node --test \"test/**/*.test.js\"",
+    "preconformance": "npm run build",
     "conformance": "node --test test/conformance.test.js",
     "doctor": "node scripts/doctor.js",
-    "prepublishOnly": "npm run typecheck && npm run build && npm test"
+    "sync-version": "node scripts/sync-version.js",
+    "version": "node scripts/sync-version.js && git add src/config.ts",
+    "prepublishOnly": "npm run typecheck && npm test"
   },
   "devDependencies": {
     "typescript": "^5.5.0",
