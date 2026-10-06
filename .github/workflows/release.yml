@@ -1,0 +1,45 @@
+name: Release
+
+# Runs only for version tags. The full CI workflow is re-run on the tagged
+# commit first; the publish job is gated on it passing.
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    name: Publish to npm
+    needs: ci
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # npm provenance
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+          cache: npm
+      - run: npm ci
+      - name: Tag must match package.json version
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          PKG="$(node -p "require('./package.json').version")"
+          if [ "$TAG" != "$PKG" ]; then
+            echo "tag v$TAG does not match package.json version $PKG" >&2
+            exit 1
+          fi
+      - run: npm run build
+      - name: Publish (dry run)
+        # TODO(release): once the NPM_TOKEN secret (npm automation token for
+        # @traitx) is configured, replace --dry-run with
+        #   npm publish --provenance --access public
+        # and set NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} on this step.
+        run: npm publish --dry-run --access public
